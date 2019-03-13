@@ -25,6 +25,7 @@ def parse_and_send_to_influx(config, jsonfile, measurement, task_tag):
     CONFIG['INFLUXDB_USER'] = config.get('InfluxDB', 'influxdb_user')
     CONFIG['INFLUXDB_PWD'] = config.get('InfluxDB', 'influxdb_pass')
 
+
     # Check if config file exists
     if not os.path.isfile(jsonfile):
         print " * ERROR: JSON file file doesn't exist"
@@ -55,6 +56,7 @@ def parse_and_send_to_influx(config, jsonfile, measurement, task_tag):
                 influx_object['tags'] = {
                     'task_id': task_tag,
                     'scenario': scenario_name
+
                 }
 
                 influx_object['time'] = \
