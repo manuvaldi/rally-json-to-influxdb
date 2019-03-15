@@ -40,34 +40,40 @@ def parse_and_send_to_influx(config, jsonfile, measurement, task_tag):
     if json_output:
         for task in json_output:
 
+            influx_object = dict()
+            influx_object['measurement'] = measurement
+
+            # Get scenario name
+            scenario = task['key']['name']
+            if scenario in scenarios:
+                scenarios[scenario] = scenarios[scenario] + 1
+                scenario_name = scenario + "-" + str(scenarios[scenario])
+            else:
+                scenarios[scenario] = 1
+                scenario_name = scenario
+
+            influx_object['tags'] = {
+                'task_id': task_tag,
+                'scenario': scenario_name
+            }
+
+            # Get Time
+            influx_object['time'] = \
+                datetime.strptime(task['created_at'], '%Y-%d-%mT%H:%M:%S')
+
+            # Get Errors
+            error = 0
             for result in task["result"]:
-                influx_object = dict()
-                influx_object['measurement'] = measurement
+                error += result['error'].__len__()
 
-                scenario = task['key']['name']
-                if scenario in scenarios:
-                    scenarios[scenario] = scenarios[scenario] + 1
-                    scenario_name = scenario + "-" + str(scenarios[scenario])
-                else:
-                    scenarios[scenario] = 1
-                    scenario_name = scenario
+            # Get Durations and Success
+            influx_object['fields'] = {
+                'load_duration': float(task['load_duration']),
+                'full_duration': float(task['full_duration']),
+                'success': int(error > 0)
+            }
 
-                influx_object['tags'] = {
-                    'task_id': task_tag,
-                    'scenario': scenario_name
-
-                }
-
-                influx_object['time'] = \
-                    datetime.strptime(task['created_at'], '%Y-%d-%mT%H:%M:%S')
-
-                influx_object['fields'] = {
-                    'load_duration': float(task['load_duration']),
-                    'full_duration': float(task['full_duration']),
-                    'success': int((result['error'].__len__()) > 0)
-                }
-
-                influx_objects.append(influx_object)
+            influx_objects.append(influx_object)
 
         print "\n Importing: \n "
         print influx_objects
